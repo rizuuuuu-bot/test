@@ -1,18 +1,27 @@
-from flask_sqlalchemy import SQLAlchemy
+from flask import Blueprint, request, jsonify
+from models.user import User, db  # ✅ FIXED: no src
 
-db = SQLAlchemy()
+user_bp = Blueprint('user', __name__)
 
-class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
+@user_bp.route('/users', methods=['GET'])
+def get_users():
+    users = User.query.all()
+    return jsonify([user.to_dict() for user in users])
 
-    def __repr__(self):
-        return f'<User {self.username}>'
+@user_bp.route('/users', methods=['POST'])
+def create_user():
+    data = request.get_json()
+    username = data.get('username')
+    email = data.get('email')
 
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'username': self.username,
-            'email': self.email
-        }
+    if not username or not email:
+        return jsonify({'error': 'Missing username or email'}), 400
+
+    if User.query.filter((User.username == username) | (User.email == email)).first():
+        return jsonify({'error': 'User already exists'}), 409
+
+    new_user = User(username=username, email=email)
+    db.session.add(new_user)
+    db.session.commit()
+
+    return jsonify(new_user.to_dict()), 201
