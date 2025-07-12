@@ -1,34 +1,31 @@
 import os
-import sys
-# DON'T CHANGE THIS !!!
-# sys.path.insert(0, os.path.dirname(os.path.dirname(__file__))) # Ye line ab remove kar den ya comment kar den
-
 from flask import Flask, send_from_directory
-from flask_cors import CORS # Flask-CORS library import ki gai hai
-# Import paths ko theek kiya gaya hai kyunke 'src' folder ke contents directly root mein hain
+from flask_cors import CORS
+
+# ✅ Corrected imports: removed "src." from everywhere
 from models.user import db
 from routes.user import user_bp
 from routes.downloader import downloader_bp
 
-# static_folder ko current directory mein 'static' folder par set kiya gaya hai
 app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), 'static'))
 app.config['SECRET_KEY'] = 'asdf#FGSgvasgf$5$WGT'
 
-# CORS configuration
-# 'origins' mein trailing slash hata diya gaya hai aur resources '/api/*' ke liye set kiye gaye hain
+# ✅ Proper CORS config for your frontend domain
 CORS(app, resources={r"/api/*": {"origins": "https://allvideodownloaders.site"}})
 
+# ✅ Register Blueprints
 app.register_blueprint(user_bp, url_prefix='/api')
 app.register_blueprint(downloader_bp)
 
-# uncomment if you need to use database
-# database file ka path bhi current directory ke mutabiq set kiya gaya hai
+# ✅ SQLite DB config
 app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(os.path.dirname(__file__), 'database', 'app.db')}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
 db.init_app(app)
 with app.app_context():
     db.create_all()
 
+# ✅ Serve static frontend build
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve(path):
@@ -45,6 +42,6 @@ def serve(path):
         else:
             return "index.html not found", 404
 
-
+# ✅ For local testing only — ignored in production by gunicorn
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
